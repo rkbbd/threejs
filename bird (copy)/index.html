@@ -9,6 +9,12 @@
         body {
             background-color: #bfe3dd;
             color: #000;
+
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            background: black;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -21,14 +27,20 @@
         import Stats from './jsm/libs/stats.module.js';
 
         import { OrbitControls } from './jsm/controls/OrbitControls.js';
-        //  import { RoomEnvironment } from './jsm/environments/RoomEnvironment.js';
 
         import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
         import { DRACOLoader } from './jsm/loaders/DRACOLoader.js';
 
         let mixer, mixer1, mixer2, mixer3, mixer4, mixerTokyo;
-        let model1;
 
+        //rain, cloud
+        let cloudParticles = [], flash, rain, rainGeo, rainCount = 15000;
+
+
+        init();
+        function init() {
+        
+        }
         const clock = new THREE.Clock();
         const container = document.getElementById('container');
 
@@ -48,12 +60,9 @@
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
 
         const scene = new THREE.Scene();
-        //scene.background = new THREE.Color(0xbfe3dd);
-        // scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-
         //
-        scene.background = new THREE.Color(0xcce0ff);
-        scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
+        scene.background = new THREE.Color(0xc2d4f0);
+        scene.fog = new THREE.Fog(0xc2d4f0, 500, 10000);
 
         //
         scene.add(new THREE.AmbientLight(0x666666));
@@ -78,11 +87,6 @@
 
         scene.add(light);
 
-
-
-        // const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
-        // camera.position.set(6, 2, 8);
-
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
         camera.position.set(1000, 50, 1500);
 
@@ -104,10 +108,6 @@
         scene.add(mesh);
 
 
-
-
-
-
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(0, 0.5, 0);
         controls.update();
@@ -120,7 +120,7 @@
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
         loader.load('models/Stork.glb', function (gltf) {
-            model1 = gltf.scene;
+            let model1 = gltf.scene;
             model1.position.set(911, 78, 1050);
             model1.rotation.set(0, -.3, 0);
             model1.scale.set(0.04, 0.04, 0.04);
@@ -187,11 +187,11 @@
             mixer4 = new THREE.AnimationMixer(model);
             mixer4.clipAction(gltf.animations[0]).play();
 
-            animate();
         }, undefined, function (e) {
             console.error(e);
         });
 
+        //building
         loader.setDRACOLoader(dracoLoader);
         loader.load('models/LittlestTokyo.glb', function (gltf) {
 
@@ -205,13 +205,80 @@
             mixerTokyo.clipAction(gltf.animations[0]).play();
 
             animate();
-
         }, undefined, function (e) {
-
             console.error(e);
-
         });
 
+        //
+        flash = new THREE.PointLight(0x062d89, 30, 500, 1.7);
+        flash.position.set(200, 300, 600);
+        scene.add(flash);
+
+        // scene.fog = new THREE.FogExp2(0xffffff, 0.002);
+        //  renderer.setClearColor(scene.fog.color);
+
+        //rain
+        // rainGeo = new THREE.Geometry();
+        // for (let i = 0; i < rainCount; i++) {
+        //     rainDrop = new THREE.Vector3(
+        //         Math.random() * 400 - 200,
+        //         Math.random() * 500 - 250,
+        //         Math.random() * 400 - 200
+        //     );
+        //     rainDrop.velocity = {};
+        //     rainDrop.velocity = 0;
+        //     rainGeo.vertices.push(rainDrop);
+        // }
+        // rainMaterial = new THREE.PointsMaterial({
+        //     color: 0xaaaaaa,
+        //     size: 0.1,
+        //     transparent: true
+        // });
+        // rain = new THREE.Points(rainGeo, rainMaterial);
+
+        rainGeo = new THREE.BufferGeometry();
+        // create a simple square shape. We duplicate the top left and bottom right
+        // vertices because each vertex needs to appear once per triangle.
+        const vertices = new Float32Array([
+            -1.0, -1.0, 1.0,
+            1.0, -1.0, 1.0,
+            1.0, 1.0, 1.0,
+
+            1.0, 1.0, 1.0,
+            -1.0, 1.0, 1.0,
+            -1.0, -1.0, 1.0
+        ]);
+
+        // itemSize = 3 because there are 3 values (components) per vertex
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        rain = new THREE.Mesh(rainGeo, material);
+
+        scene.add(rain);
+        //cloud
+        texture_loader.load("texture/smoke.png", function (texture) {
+            let cloudGeo = new THREE.PlaneBufferGeometry(500, 500);
+            let cloudMaterial = new THREE.MeshLambertMaterial({
+                map: texture,
+                transparent: true
+            });
+
+            let cloud = new THREE.Mesh(cloudGeo, cloudMaterial);
+            cloud.position.set(200, 300, 600);
+            cloud.rotation.set(1.6, -.003, 3);
+            cloud.scale.set(0.9, 0.9, 0.9);
+            cloud.material.opacity = 0.4;
+            cloudParticles.push(cloud);
+            scene.add(cloud);
+
+            let cloud_2 = new THREE.Mesh(cloudGeo, cloudMaterial);
+            cloud_2.position.set(500, 300, 0);
+            cloud_2.rotation.set(1.6, -.003, 3);
+            cloud_2.scale.set(0.9, 0.9, 0.9);
+            cloud_2.material.opacity = 0.4;
+            cloudParticles.push(cloud_2);
+            scene.add(cloud_2);
+        });
 
 
 
@@ -223,6 +290,31 @@
 
 
         function animate() {
+            //rain and cloud
+            cloudParticles.forEach(p => {
+                p.rotation.z -= 0.002;
+            });
+            // rainGeo.vertices.forEach(p => {
+            //     p.velocity -= 0.1 + Math.random() * 0.1;
+            //     p.y += p.velocity;
+            //     if (p.y < -200) {
+            //         p.y = 200;
+            //         p.velocity = 0;
+            //     }
+            // });
+            rainGeo.verticesNeedUpdate = true;
+            rain.rotation.y += 0.002;
+            if (Math.random() > 0.93 || flash.power > 100) {
+                if (flash.power < 100)
+                    // flash.position.set(
+                    //     Math.random() * 400,
+                    //     300 + Math.random() * 200,
+                    //     100
+                    // );
+                    flash.position.set(200, 100, 600);
+                flash.power = 50 + Math.random() * 500;
+            }
+
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             mixer.update(delta);
