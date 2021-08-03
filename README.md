@@ -1,7 +1,7 @@
 
 This Project has some example of Threejs
-Example 1: [Dhaka tour](https://threejs.org/examples/)
-Example 2: Box Geometry
+Example 1: [Dhaka tour](https://threejs.org/examples/);
+Example 2: Box Geometry;
 Example 3: Earth
 Example 4: Extrude Geometry
 Example 5: Geometry Example
